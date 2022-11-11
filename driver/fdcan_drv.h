@@ -5,10 +5,12 @@
 #include "fdcan.h"
 
 
-#define FDCAN1_ENABLED 
-#define FDCAN1_PORT      &hfdcan1
-#define FDCAN2_PORT      &hfdcan2
 
+#define FDCAN1_ENABLED 
+#define FDCAN1_PORT                 &hfdcan1
+#define FDCAN2_PORT                 &hfdcan2
+#define FDCAN_MAX_DLC               8  
+#define FDCAN_STANDARDID_MAX_SIZE   0x7FF
 
 
 typedef enum{
@@ -66,19 +68,21 @@ typedef enum {
 	 DLC8, 
 }FDCAN_DataLength;
 
+
 typedef enum {
-	 FDCAN_STATUS_AVAILABLE = 0, 
-	 FDCAN_STATUS_FAULT,
+       FDCAN_OK,
+       FDCAN_ERROR,
+       FDCAN_TIMEOUT,
+       FDCAN_AVAILABLE,
 }FDCAN_STATUS;
 
+typedef struct fdcan_drv_t {
+	    uint8_t   messageToBeTransmittedBuffer[FDCAN_MAX_DLC];
+		uint8_t   messageReceivedBuffer[FDCAN_MAX_DLC];
+        FDCAN_STATUS    (*initialize) (FDCAN_HandleTypeDef *hfdcan, uint32_t* CANIDs);
+        void (*transfer)(FDCAN_HandleTypeDef *hfdcan, uint32_t transmitCANId, FDCAN_IDType idType, uint8_t* messages, uint8_t DLC);
+}fdcan_drv_t;
 
-typedef struct fdcan_t {
-	    uint8_t          messageToBeTransmittedBuffer[8];
-		uint8_t          messageReceivedBuffer[8];
-        void (*init)     (FDCAN_HandleTypeDef *hfdcan, uint32_t* CANIDs);
-        void (*transfer) (FDCAN_HandleTypeDef *hfdcan, uint32_t transmitCANId, FDCAN_IDType idType, uint8_t* messages, uint8_t DLC);
-}fdcan_t;
-
-extern fdcan_t fdcan;
+extern fdcan_drv_t __fdcan;
 
 #endif
