@@ -1,11 +1,11 @@
 #include "fdcan_drv.h"
 
 FDCAN_STATUS FDCAN_initialize(FDCAN_HandleTypeDef*, uint32_t*);
-void FDCAN_dataTransfer(FDCAN_HandleTypeDef*, uint32_t, FDCAN_IDType, uint8_t*, uint8_t);
+void FDCAN_transmitMessages(FDCAN_HandleTypeDef*, uint32_t, FDCAN_IDType, uint8_t*, uint8_t);
 
 fdcan_drv_t __fdcan = {
-        .initialize = FDCAN_initialize,
-	 .transfer   = FDCAN_dataTransfer,
+        .initialize         = FDCAN_initialize,
+	 .transmitMessages   = FDCAN_transmitMessages,
 };
 
 /*Custom Function Prototypes Start*/
@@ -34,39 +34,13 @@ static void __fdcan_filterConfigIdType (FDCAN_FilterTypeDef* filterConfig, uint3
           __fdcan_filterIdTypeIsExtended(filterConfig, receiveCANId, idType);
 	else if(idType == StandardId)
 	   __fdcan_filterIdTypeIsStandard(filterConfig, receiveCANId, idType);
-
 }
 
-static void __fdcan_setFilterConfigFIFO (FDCAN_FilterTypeDef* filterConfig, FIFOs_FDCAN fifo) {
+static void __fdcan_filterConfigFIFO (FDCAN_FilterTypeDef* filterConfig, FIFOs_FDCAN fifo) {
        if(fifo == FIFO0_FDCAN) 
           filterConfig->FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
 	else if(fifo == FIFO1_FDCAN) 
 	   filterConfig->FilterConfig = FDCAN_FILTER_TO_RXFIFO1;
-}
-
-static FDCAN_STATUS __fdcan_setupAsStandardId(FDCAN_HandleTypeDef *hfdcan, uint32_t CANId, uint16_t filterBank) {
-       FDCAN_STATUS setupStatus = FDCAN_OK;
-       if(__fdcan_filterConfig(hfdcan, CANId, StandardId, FBANK0+filterBank, FIFO0_FDCAN) != FDCAN_OK) 
-          setupStatus = FDCAN_ERROR;
-       return setupStatus;
-}
-
-static FDCAN_STATUS __fdcan_setupAsExtendedId(FDCAN_HandleTypeDef *hfdcan, uint32_t CANId, uint16_t filterBank) {
-       FDCAN_STATUS setupStatus = FDCAN_OK;
-       if(__fdcan_filterConfig(hfdcan, CANId, ExtendedId, FBANK14+filterBank, FIFO0_FDCAN) != FDCAN_OK) 
-          setupStatus = FDCAN_ERROR;
-       return setupStatus;
-}
-
-static FDCAN_STATUS __fdcan_setupStandardAndExtendedIds (FDCAN_HandleTypeDef *hfdcan, uint32_t* CANIDs) {
-       uint16_t addressPointer  = 0, FBBank_ExtdIncr = 0, FBBank_StdIncr = 0;
-       FDCAN_STATUS setupStatus = FDCAN_OK;
-       while(CANIDs[addressPointer]>0) {
-          if(CANIDs[addressPointer] <= FDCAN_STANDARDID_MAX_SIZE)
-               if(__fdcan_setupAsStandardId(hfdcan, CANIDs[addressPointer++], FBBank_StdIncr++)  != FDCAN_OK) setupStatus = FDCAN_ERROR;
-          else if(__fdcan_setupAsExtendedId(hfdcan, CANIDs[addressPointer++], FBBank_ExtdIncr++) != FDCAN_OK) setupStatus = FDCAN_ERROR;      
-       }
-       return setupStatus;
 }
 
 static FDCAN_STATUS __fdcan_filterConfig(FDCAN_HandleTypeDef* hfdcan, uint32_t receiveCANId, FDCAN_IDType idType, 
@@ -87,7 +61,34 @@ static FDCAN_STATUS __fdcan_filterConfig(FDCAN_HandleTypeDef* hfdcan, uint32_t r
        return configStatus;
 }
 
-void FDCAN_dataTransfer(FDCAN_HandleTypeDef *hfdcan, uint32_t transmitCANId, FDCAN_IDType idType, 
+static FDCAN_STATUS __fdcan_setupAsStandardId(FDCAN_HandleTypeDef *hfdcan, uint32_t CANId, uint16_t filterBank) {
+       FDCAN_STATUS setupStatus = FDCAN_OK;
+       if(__fdcan_filterConfig(hfdcan, CANId, StandardId, FBANK0+filterBank, FIFO0_FDCAN) != FDCAN_OK) 
+          setupStatus = FDCAN_ERROR;
+       return setupStatus;
+}
+
+static FDCAN_STATUS __fdcan_setupAsExtendedId(FDCAN_HandleTypeDef *hfdcan, uint32_t CANId, uint16_t filterBank) {
+       FDCAN_STATUS setupStatus = FDCAN_OK;
+       if(__fdcan_filterConfig(hfdcan, CANId, ExtendedId, FBANK14+filterBank, FIFO0_FDCAN) != FDCAN_OK) 
+          setupStatus = FDCAN_ERROR;
+       return setupStatus;
+}
+
+static FDCAN_STATUS __fdcan_setupStandardAndExtendedIds (FDCAN_HandleTypeDef *hfdcan, uint32_t* CANIDs) {
+       uint16_t addressPointer  = 0, FBBank_ExtdIncr = 0, FBBank_StdIncr = 0;
+       FDCAN_STATUS setupStatus = FDCAN_OK;
+       while(CANIDs[addressPointer]>0) {
+          if(CANIDs[addressPointer] <= FDCAN_STANDARDID_MAX_SIZE){
+               if(__fdcan_setupAsStandardId(hfdcan, CANIDs[addressPointer++], FBBank_StdIncr++)  != FDCAN_OK) setupStatus = FDCAN_ERROR;
+          }
+          else if(__fdcan_setupAsExtendedId(hfdcan, CANIDs[addressPointer++], FBBank_ExtdIncr++) != FDCAN_OK) setupStatus = FDCAN_ERROR;      
+       }
+       return setupStatus;
+}
+
+
+void FDCAN_transmitMessages(FDCAN_HandleTypeDef *hfdcan, uint32_t transmitCANId, FDCAN_IDType idType, 
                         uint8_t* messages, uint8_t DLC) {
      FDCAN_TxHeaderTypeDef txMsg;
      const uint32_t fdcan_dlcBytesPosition = 24;
@@ -100,7 +101,7 @@ void FDCAN_dataTransfer(FDCAN_HandleTypeDef *hfdcan, uint32_t transmitCANId, FDC
      txMsg.BitRateSwitch        = FDCAN_BRS_ON;
      txMsg.FDFormat             = FDCAN_FD_CAN;
      txMsg.TxEventFifoControl   = FDCAN_NO_TX_EVENTS;
-     HAL_CAN_AddTxMessage(hfdcan, &txMsg, messages);
+     HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &txMsg, messages);
 }
 
 FDCAN_STATUS FDCAN_initialize(FDCAN_HandleTypeDef *hfdcan, uint32_t* CANIDs) {
@@ -122,5 +123,5 @@ FDCAN_STATUS FDCAN_initialize(FDCAN_HandleTypeDef *hfdcan, uint32_t* CANIDs) {
 void HAL_CAN_RxFifo0MsgPendingCallback(FDCAN_HandleTypeDef *hfdcan) {
      FDCAN_RxHeaderTypeDef rxMessageBuffer;  
      if (hfdcan == FDCAN1_PORT)
-         HAL_CAN_GetRxMessage(FDCAN1_PORT, FDCAN_RX_FIFO0, &rxMessageBuffer, (uint8_t*)__fdcan.messageReceivedBuffer);
+         HAL_FDCAN_GetRxMessage(FDCAN1_PORT, FDCAN_RX_FIFO0, &rxMessageBuffer, (uint8_t*)__fdcan.messageReceivedBuffer);
 }
