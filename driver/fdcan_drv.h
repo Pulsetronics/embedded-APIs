@@ -79,8 +79,8 @@ typedef enum {
 typedef struct fdcan_drv_t {
 	    uint8_t   messageToBeTransmittedBuffer[FDCAN_MAX_DLC];
 		uint8_t   messageReceivedBuffer[FDCAN_MAX_DLC];
-        FDCAN_STATUS    (*initialize) (FDCAN_HandleTypeDef *hfdcan, uint32_t* CANIDs);
-        void (*transmitMessages)(FDCAN_HandleTypeDef *hfdcan, uint32_t transmitCANId, FDCAN_IDType idType, uint8_t* messages, uint8_t DLC);
+        FDCAN_STATUS (*initialize) (FDCAN_HandleTypeDef *hfdcan, uint32_t* CANIDs);
+        FDCAN_STATUS (*transmitMessages)(FDCAN_HandleTypeDef *hfdcan, uint32_t transmitCANId, FDCAN_IDType idType, uint8_t* messages, uint8_t DLC);
 }fdcan_drv_t;
 
 extern fdcan_drv_t __fdcan;

@@ -13,7 +13,8 @@
 
 typedef struct fdcan_app_t{
         uint32_t RxCANIds[FDCAN_MAX_RxID_SIZE];
-        FDCAN_STATUS (*addRxCANIdAndInitilize)(void);
+        FDCAN_STATUS (*addRxIdAndInitilize)(void);
+        FDCAN_STATUS (*writeMessages)(FDCAN_HandleTypeDef* port, uint32_t id, uint8_t* messages, uint8_t size);
 }fdcan_app_t;
 
 extern fdcan_app_t fdcan;

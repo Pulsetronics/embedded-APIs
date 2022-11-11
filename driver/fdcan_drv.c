@@ -1,7 +1,7 @@
 #include "fdcan_drv.h"
 
 FDCAN_STATUS FDCAN_initialize(FDCAN_HandleTypeDef*, uint32_t*);
-void FDCAN_transmitMessages(FDCAN_HandleTypeDef*, uint32_t, FDCAN_IDType, uint8_t*, uint8_t);
+FDCAN_STATUS FDCAN_transmitMessages(FDCAN_HandleTypeDef*, uint32_t, FDCAN_IDType, uint8_t*, uint8_t);
 
 fdcan_drv_t __fdcan = {
         .initialize         = FDCAN_initialize,
@@ -88,9 +88,10 @@ static FDCAN_STATUS __fdcan_setupStandardAndExtendedIds (FDCAN_HandleTypeDef *hf
 }
 
 
-void FDCAN_transmitMessages(FDCAN_HandleTypeDef *hfdcan, uint32_t transmitCANId, FDCAN_IDType idType, 
+FDCAN_STATUS FDCAN_transmitMessages(FDCAN_HandleTypeDef *hfdcan, uint32_t transmitCANId, FDCAN_IDType idType, 
                         uint8_t* messages, uint8_t DLC) {
      FDCAN_TxHeaderTypeDef txMsg;
+     FDCAN_STATUS transmitStatus = FDCAN_OK;
      const uint32_t fdcan_dlcBytesPosition = 24;
 
      __fdcan_configIdType(&txMsg, idType);
@@ -101,7 +102,8 @@ void FDCAN_transmitMessages(FDCAN_HandleTypeDef *hfdcan, uint32_t transmitCANId,
      txMsg.BitRateSwitch        = FDCAN_BRS_ON;
      txMsg.FDFormat             = FDCAN_FD_CAN;
      txMsg.TxEventFifoControl   = FDCAN_NO_TX_EVENTS;
-     HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &txMsg, messages);
+     if(HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &txMsg, messages) != HAL_OK) transmitStatus = FDCAN_ERROR;
+     return transmitStatus;
 }
 
 FDCAN_STATUS FDCAN_initialize(FDCAN_HandleTypeDef *hfdcan, uint32_t* CANIDs) {
