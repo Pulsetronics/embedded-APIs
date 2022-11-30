@@ -92,14 +92,14 @@ FDCAN_STATUS FDCAN_transmitMessages(FDCAN_HandleTypeDef *hfdcan, uint32_t transm
                         uint8_t* messages, uint8_t DLC) {
      FDCAN_TxHeaderTypeDef txMsg;
      FDCAN_STATUS transmitStatus = FDCAN_OK;
-     const uint32_t fdcan_dlcBytesPosition = 24;
-
+     const uint32_t fdcan_dlcBytesPosition = 16;
+  
      __fdcan_configIdType(&txMsg, idType);
      txMsg.Identifier           = transmitCANId;
      txMsg.TxFrameType          = FDCAN_DATA_FRAME;
      txMsg.DataLength           = DLC<<fdcan_dlcBytesPosition;
      txMsg.ErrorStateIndicator  = FDCAN_ESI_ACTIVE;
-     txMsg.BitRateSwitch        = FDCAN_BRS_ON;
+     txMsg.BitRateSwitch        = FDCAN_BRS_OFF;
      txMsg.FDFormat             = FDCAN_FD_CAN;
      txMsg.TxEventFifoControl   = FDCAN_NO_TX_EVENTS;
      if(HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &txMsg, messages) != HAL_OK) transmitStatus = FDCAN_ERROR;

@@ -1,6 +1,6 @@
 #include "fdcan_app.h"
 
-FDCAN_STATUS FDCAN_addRxIdAndInitilize(void);
+FDCAN_STATUS FDCAN_addRxCANIdAndInitialize(void);
 FDCAN_STATUS FDCAN_writeMessages(FDCAN_HandleTypeDef*, uint32_t, uint8_t* , uint8_t );
 
 
@@ -10,8 +10,8 @@ fdcan_app_t fdcan = {
                           FDCAN_RxID_705,
                           FDCAN_RxID_1200,
                         },
-            .addRxIdAndInitilize = FDCAN_addRxIdAndInitilize,
-            .writeMessages       = FDCAN_writeMessages,
+            .addRxCANIdAndInitialize = FDCAN_addRxCANIdAndInitialize,
+            .writeMessages        = FDCAN_writeMessages,
 };
 
 
@@ -23,7 +23,7 @@ static FDCAN_IDType __fdcan_getIdType(uint32_t id) {
 }
 
 
-FDCAN_STATUS FDCAN_addRxIdAndInitilize(void) {
+FDCAN_STATUS FDCAN_addRxCANIdAndInitialize(void) {
      FDCAN_STATUS initStatus = FDCAN_OK;
      if(__fdcan.initialize(FDCAN1_PORT, fdcan.RxCANIds) != FDCAN_OK) initStatus = FDCAN_ERROR;
      return initStatus;
